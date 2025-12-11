@@ -21,7 +21,6 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,6 +28,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+//import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.recipeexplorer.ui.components.DifficultyFilter
 import com.example.recipeexplorer.ui.components.RecipeCard
@@ -51,7 +51,6 @@ fun RecipeListScreen(
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
-    // Auto-hide refresh indicator when data loads
     LaunchedEffect(uiState) {
         if (uiState is RecipeUiState.Success || uiState is RecipeUiState.Error) {
             isRefreshing = false
@@ -74,7 +73,6 @@ fun RecipeListScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Search Bar
             SearchBar(
                 onSearch = { query ->
                     viewModel.searchRecipes(query)
@@ -82,7 +80,6 @@ fun RecipeListScreen(
                 }
             )
 
-            // Difficulty Filter
             DifficultyFilter(
                 selectedDifficulty = selectedDifficulty,
                 onDifficultySelected = { difficulty ->
@@ -91,7 +88,6 @@ fun RecipeListScreen(
                 }
             )
 
-            // Content with Pull-to-Refresh
             PullToRefreshBox(
                 isRefreshing = isRefreshing,
                 onRefresh = {
@@ -99,7 +95,6 @@ fun RecipeListScreen(
                         isRefreshing = true
                         viewModel.loadRecipes(refresh = true)
                         selectedDifficulty = null
-                        // Give a small delay to ensure smooth animation
                         delay(300)
                         isRefreshing = false
                     }
@@ -144,21 +139,33 @@ fun RecipeListScreen(
                                         onClick = { onRecipeClick(recipe.id) }
                                     )
                                 }
+                                /*item {
+                                    if (state.recipes.isNotEmpty()) {
+                                        Text(
+                                            text = "Showing ${state.recipes.size} recipes",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+                                }*/
 
-                                // Load More Button
-                                item {
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(16.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Button(
-                                            onClick = {
-                                                viewModel.loadMoreRecipes()
-                                            }
+                                if (viewModel.shouldShowLoadMore()) {
+                                    item {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(16.dp),
+                                            contentAlignment = Alignment.Center
                                         ) {
-                                            Text("Load More")
+                                            Button(
+                                                onClick = { viewModel.loadMoreRecipes() }
+                                            ) {
+                                                Text("Load More")
+                                            }
                                         }
                                     }
                                 }

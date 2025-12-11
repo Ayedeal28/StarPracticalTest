@@ -1,6 +1,5 @@
 package com.example.recipeexplorer.ui.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,6 +29,19 @@ import com.example.recipeexplorer.data.model.Recipe
 import com.example.recipeexplorer.ui.theme.DifficultyEasy
 import com.example.recipeexplorer.ui.theme.DifficultyMedium
 import com.example.recipeexplorer.ui.theme.DifficultyHard
+import androidx.compose.foundation.border
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.input.pointer.pointerInput
 
 @Composable
 fun RecipeCard(
@@ -37,11 +49,34 @@ fun RecipeCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.95f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy)
+    )
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .clickable(onClick = onClick),
+            .scale(scale)
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        tryAwaitRelease()
+                    },
+                    onTap = {
+                        onClick()
+                    }
+                )
+            }
+            .shadow(elevation = 8.dp, shape = RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .border(
+                width = 1.dp,
+                color = Color.White.copy(alpha = 0.1f),
+                shape = RoundedCornerShape(16.dp)
+            ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
@@ -51,7 +86,7 @@ fun RecipeCard(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Recipe Image with optimization
+
             AsyncImage(
                 model = recipe.image,
                 contentDescription = recipe.name,
@@ -59,13 +94,12 @@ fun RecipeCard(
                     .size(80.dp)
                     .clip(RoundedCornerShape(8.dp)),
                 contentScale = ContentScale.Crop,
-                placeholder = null, // You can add a placeholder drawable if you want
-                error = null // You can add an error drawable if you want
+                placeholder = null,
+                error = null
             )
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Recipe Details
             Column(
                 modifier = Modifier.weight(1f)
             ) {

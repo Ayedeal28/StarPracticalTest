@@ -26,14 +26,23 @@ class RecipeViewModel : ViewModel() {
 
     private var currentDifficultyFilter: String? = null
 
+    // ✨ ADD THESE NEW PROPERTIES:
+    private var totalRecipes = 0
+    private var hasMoreRecipes = true
+
     init {
         loadRecipes()
+    }
+
+    fun shouldShowLoadMore(): Boolean {
+        return hasMoreRecipes && allRecipes.size < totalRecipes
     }
 
     fun loadRecipes(refresh: Boolean = false) {
         if (refresh) {
             currentSkip = 0
             allRecipes = emptyList()
+            hasMoreRecipes = true
         }
 
         viewModelScope.launch {
@@ -47,11 +56,16 @@ class RecipeViewModel : ViewModel() {
 
             result.fold(
                 onSuccess = { response ->
+                    totalRecipes = response.total
+
                     allRecipes = if (refresh) {
                         response.recipes
                     } else {
                         allRecipes + response.recipes
                     }
+
+                    hasMoreRecipes = allRecipes.size < totalRecipes
+
                     applyFilter()
                 },
                 onFailure = { exception ->
@@ -64,7 +78,7 @@ class RecipeViewModel : ViewModel() {
     }
 
     fun loadMoreRecipes() {
-        if (isLoadingMore) return
+        if (isLoadingMore || !hasMoreRecipes) return
 
         isLoadingMore = true
         currentSkip += pageSize
@@ -78,7 +92,12 @@ class RecipeViewModel : ViewModel() {
 
             result.fold(
                 onSuccess = { response ->
+                    totalRecipes = response.total
+
                     allRecipes = allRecipes + response.recipes
+
+                    hasMoreRecipes = allRecipes.size < totalRecipes
+
                     applyFilter()
                     isLoadingMore = false
                 },
@@ -96,6 +115,7 @@ class RecipeViewModel : ViewModel() {
         currentSearchQuery = query
         currentSkip = 0
         allRecipes = emptyList()
+        hasMoreRecipes = true
         loadRecipes()
     }
 

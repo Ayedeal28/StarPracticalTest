@@ -50,8 +50,7 @@ import kotlinx.coroutines.launch
 fun RecipeDetailScreen(
     recipeId: Int,
     viewModel: RecipeViewModel,
-    onBackClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onBackClick: () -> Unit
 ) {
     var recipe by remember { mutableStateOf<Recipe?>(null) }
     var isLoading by remember { mutableStateOf(true) }
