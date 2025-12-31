@@ -46,6 +46,7 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.runtime.saveable.rememberSaveable
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -55,14 +56,20 @@ fun RecipeListScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var selectedDifficulty by remember { mutableStateOf<String?>(null) }
+
+
+    var selectedDifficulty by rememberSaveable { mutableStateOf<String?>(null) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
     var isRefreshing by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
 
-    LaunchedEffect(uiState) {
-        if (uiState is RecipeUiState.Success || uiState is RecipeUiState.Error) {
-            isRefreshing = false
+    LaunchedEffect(Unit) {
+        if (searchQuery.isNotEmpty()) {
+            viewModel.searchRecipes(searchQuery)
+        }
+        if (selectedDifficulty != null) {
+            viewModel.filterByDifficulty(selectedDifficulty)
         }
     }
 
@@ -83,18 +90,35 @@ fun RecipeListScreen(
                 .padding(paddingValues)
         ) {
             SearchBar(
+                searchQuery = searchQuery,
+                onSearchQueryChange = { query -> searchQuery = query },
                 onSearch = { query ->
+                    searchQuery = query
                     viewModel.searchRecipes(query)
                     selectedDifficulty = null
+
+                    scope.launch {
+                        listState.animateScrollToItem(0)
+                    }
                 }
             )
+
+            val availableDifficulties = remember(uiState) {
+                viewModel.getAvailableDifficulties()
+            }
 
             DifficultyFilter(
                 selectedDifficulty = selectedDifficulty,
                 onDifficultySelected = { difficulty ->
                     selectedDifficulty = difficulty
                     viewModel.filterByDifficulty(difficulty)
-                }
+
+
+                    scope.launch {
+                        listState.animateScrollToItem(0)
+                    }
+                },
+                availableDifficulties = availableDifficulties
             )
 
             PullToRefreshBox(
@@ -103,7 +127,9 @@ fun RecipeListScreen(
                     scope.launch {
                         isRefreshing = true
                         viewModel.loadRecipes(refresh = true)
-                        selectedDifficulty = null
+                        if (selectedDifficulty != null) {
+                            viewModel.filterByDifficulty(selectedDifficulty)
+                        }
                         delay(300)
                         isRefreshing = false
                     }
@@ -148,20 +174,6 @@ fun RecipeListScreen(
                                         onClick = { onRecipeClick(recipe.id) }
                                     )
                                 }
-                                /*item {
-                                    if (state.recipes.isNotEmpty()) {
-                                        Text(
-                                            text = "Showing ${state.recipes.size} recipes",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                                            textAlign = TextAlign.Center
-                                        )
-                                    }
-                                }*/
-
                                 if (viewModel.shouldShowLoadMore()) {
                                     item {
                                         Box(

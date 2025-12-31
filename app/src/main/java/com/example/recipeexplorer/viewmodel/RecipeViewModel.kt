@@ -12,21 +12,14 @@ import kotlinx.coroutines.launch
 class RecipeViewModel : ViewModel() {
 
     private val repository = RecipeRepository()
-
     private val _uiState = MutableStateFlow<RecipeUiState>(RecipeUiState.Loading)
     val uiState: StateFlow<RecipeUiState> = _uiState.asStateFlow()
-
     private var allRecipes: List<Recipe> = emptyList()
-
     private var currentSkip = 0
     private val pageSize = 10
     private var isLoadingMore = false
-
     private var currentSearchQuery: String = ""
-
     private var currentDifficultyFilter: String? = null
-
-    // ✨ ADD THESE NEW PROPERTIES:
     private var totalRecipes = 0
     private var hasMoreRecipes = true
 
@@ -138,4 +131,18 @@ class RecipeViewModel : ViewModel() {
         val result = repository.getRecipeById(id)
         return result.getOrNull()
     }
+    fun getAvailableDifficulties(): List<String> {
+        return allRecipes
+            .map { it.difficulty }
+            .distinct()
+            .sortedBy { d ->
+                when (d.lowercase()) {
+                    "easy" -> 1
+                    "medium" -> 2
+                    "hard" -> 3
+                    else -> 4
+                }
+            }
+    }
+
 }

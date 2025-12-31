@@ -25,7 +25,6 @@ class RecipeRepository {
             Result.failure(Exception("Something went wrong: ${e.localizedMessage}"))
         }
     }
-    // try catch bos, mati kita kalau error xda handler XD
     suspend fun searchRecipes(query: String, limit: Int = 10, skip: Int = 0): Result<RecipeResponse> {
         return try {
             val response = api.searchRecipes(query, limit, skip)

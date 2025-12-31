@@ -14,9 +14,10 @@ import androidx.compose.ui.unit.dp
 fun DifficultyFilter(
     selectedDifficulty: String?,
     onDifficultySelected: (String?) -> Unit,
+    availableDifficulties: List<String>,
     modifier: Modifier = Modifier
 ) {
-    val difficulties = listOf("Easy", "Medium", "Hard")
+    if (availableDifficulties.isEmpty()) return
 
     Row(
         modifier = modifier
@@ -30,7 +31,7 @@ fun DifficultyFilter(
             label = { Text("All") }
         )
 
-        difficulties.forEach { difficulty ->
+        availableDifficulties.forEach { difficulty ->
             FilterChip(
                 selected = selectedDifficulty == difficulty,
                 onClick = { onDifficultySelected(difficulty) },
