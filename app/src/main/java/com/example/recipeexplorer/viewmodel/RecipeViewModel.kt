@@ -32,14 +32,15 @@ class RecipeViewModel : ViewModel() {
     }
 
     fun loadRecipes(refresh: Boolean = false) {
-        if (refresh) {
-            currentSkip = 0
-            allRecipes = emptyList()
-            hasMoreRecipes = true
-        }
-
         viewModelScope.launch {
-            _uiState.value = RecipeUiState.Loading
+            if (refresh) {
+                _uiState.value = RecipeUiState.Loading
+            }
+
+            if (refresh) {
+                currentSkip = 0
+                hasMoreRecipes = true
+            }
 
             val result = if (currentSearchQuery.isNotEmpty()) {
                 repository.searchRecipes(currentSearchQuery, pageSize, currentSkip)
@@ -50,6 +51,7 @@ class RecipeViewModel : ViewModel() {
             result.fold(
                 onSuccess = { response ->
                     totalRecipes = response.total
+
 
                     allRecipes = if (refresh) {
                         response.recipes

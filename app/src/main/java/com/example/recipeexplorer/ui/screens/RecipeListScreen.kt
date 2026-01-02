@@ -44,7 +44,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.runtime.saveable.rememberSaveable
 
@@ -56,7 +58,6 @@ fun RecipeListScreen(
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
-
 
     var selectedDifficulty by rememberSaveable { mutableStateOf<String?>(null) }
     var searchQuery by rememberSaveable { mutableStateOf("") }
@@ -77,6 +78,21 @@ fun RecipeListScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Recipe Explorer") },
+                navigationIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(
+                            onClick = {
+                                searchQuery = ""
+                                viewModel.searchRecipes("")
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
@@ -94,14 +110,27 @@ fun RecipeListScreen(
                 onSearchQueryChange = { query -> searchQuery = query },
                 onSearch = { query ->
                     searchQuery = query
-                    viewModel.searchRecipes(query)
                     selectedDifficulty = null
+                    viewModel.filterByDifficulty(null)
+                    viewModel.searchRecipes(query)
 
                     scope.launch {
                         listState.animateScrollToItem(0)
                     }
                 }
             )
+
+            LaunchedEffect(uiState, searchQuery) {
+                if (uiState is RecipeUiState.Success && searchQuery.isNotEmpty()) {
+                    delay(200)
+                    val availableDiffs = viewModel.getAvailableDifficulties()
+
+                    if (availableDiffs.size == 1 && selectedDifficulty != availableDiffs.first()) {
+                        selectedDifficulty = availableDiffs.first()
+                        viewModel.filterByDifficulty(availableDiffs.first())
+                    }
+                }
+            }
 
             val availableDifficulties = remember(uiState) {
                 viewModel.getAvailableDifficulties()
@@ -112,7 +141,6 @@ fun RecipeListScreen(
                 onDifficultySelected = { difficulty ->
                     selectedDifficulty = difficulty
                     viewModel.filterByDifficulty(difficulty)
-
 
                     scope.launch {
                         listState.animateScrollToItem(0)
@@ -126,11 +154,17 @@ fun RecipeListScreen(
                 onRefresh = {
                     scope.launch {
                         isRefreshing = true
+
+                        delay(100)
+
                         viewModel.loadRecipes(refresh = true)
+
                         if (selectedDifficulty != null) {
                             viewModel.filterByDifficulty(selectedDifficulty)
                         }
-                        delay(300)
+
+                        delay(400)
+
                         isRefreshing = false
                     }
                 },
@@ -150,15 +184,41 @@ fun RecipeListScreen(
 
                     is RecipeUiState.Success -> {
                         if (state.recipes.isEmpty()) {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "No recipes found",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
+                            if (!isRefreshing) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Text(
+                                            text = if (selectedDifficulty != null) {
+                                                "No ${selectedDifficulty?.lowercase()} recipes found"
+                                            } else if (searchQuery.isNotEmpty()) {
+                                                "No results for \"$searchQuery\""
+                                            } else {
+                                                "No recipes found"
+                                            },
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            textAlign = TextAlign.Center
+                                        )
+
+                                        if (selectedDifficulty != null && searchQuery.isEmpty()) {
+                                            Spacer(modifier = Modifier.height(8.dp))
+                                            Button(
+                                                onClick = {
+                                                    selectedDifficulty = null
+                                                    viewModel.filterByDifficulty(null)
+                                                }
+                                            ) {
+                                                Text("Show All Recipes")
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         } else {
                             LazyColumn(
